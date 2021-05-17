@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 import {createStore} from 'redux';
+import {combineReducers} from 'redux';
 // var redux = require('react-redux');
 
 
@@ -52,12 +53,23 @@ const visibilityFilter = (state='SHOW_ALL', action) => {
   }
 };
 
-const todoApp = (state = {}, action) => {
-  return {
-    todos: todos(state.todos, action),
-    visibilityFilter : visibilityFilter(state.visibilityFilter, action)
-  };
-};
+// const todoApp = (state = {}, action) => {
+//   return {
+//     todos: todos(state.todos, action),
+//     visibilityFilter : visibilityFilter(state.visibilityFilter, action)
+//   };
+// };
+
+// creating todoApp component with combineReducers
+const todoApp = combineReducers({
+  //state field: reducer to be called
+  // todos: todos,
+  // visibilityFilter: visibilityFilter
+
+  // ES6 object literal shorthand notation
+  todos, 
+  visibilityFilter
+});
 
 const store = createStore(todoApp);
 

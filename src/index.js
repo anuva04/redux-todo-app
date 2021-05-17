@@ -10,15 +10,16 @@ import {combineReducers} from 'redux';
 const todo = (state, action) => {
   switch(action.type) {
     case 'ADD_TODO':
-      return [
-        ...state,
-        {id: action.id, text: action.text, comleted: false}
-      ];
+      return {
+        id: action.id, 
+        text: action.text, 
+        completed: false
+      }
     case 'TOGGLE_TODO':
       if(state.id !== action.id) return state;
-        return {
-          ...state,
-          completed: !state.completed
+      return {
+        ...state,
+        completed: !state.completed
       };
     default:
       return state;
@@ -73,25 +74,52 @@ const todoApp = combineReducers({
 
 const store = createStore(todoApp);
 
+let nextTodoID = 0;
 class TodoApp extends React.Component {
   render() {
     return (
       <div>
-        <button>
+        {/* for taking input from user */}
+        <input ref={node => {
+          this.input = node;
+        }} />
+        {/* always dispatches ADD_TODO action */}
+        <button onClick={() => {
+          store.dispatch({
+            type: 'ADD_TODO',
+            text: this.input.value,
+            id: nextTodoID++
+          });
+          this.input.value = '';
+        }}>
           Add Todo
         </button>
+        <ul>
+          {this.props.todos.map(todo =>
+          // each <li> should have a unique key for react to be able to uniquely identify it
+            <li key={todo.id}
+                onClick={() => {
+                  store.dispatch({type: 'TOGGLE_TODO', id: todo.id});
+                }} 
+                // double curly braces because we are adding a JS logical expression
+                style={{ textDecoration: todo.completed ? 'line-through' : 'none' }} >
+              {todo.text}
+            </li>  
+          )}
+        </ul>
       </div>
-    )
+    );
   }
 }
 
 const render = () => {
   ReactDOM.render(
     <React.StrictMode>
-      <TodoApp />
+      <TodoApp todos={store.getState().todos}/>
     </React.StrictMode>,
     document.getElementById('root')
   );
 }
 
+store.subscribe(render);
 render();

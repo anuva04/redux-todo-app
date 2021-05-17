@@ -2,21 +2,37 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 
-const todos = (state = [], action) => {
-  switch (action.type){
+// todo reducer for carrying out an action for a single todo
+const todo = (state, action) => {
+  switch(action.type) {
     case 'ADD_TODO':
       return [
         ...state,
         {id: action.id, text: action.text, comleted: false}
       ];
     case 'TOGGLE_TODO':
-      return state.map(todo => {
-        if(todo.id !== action.id) return todo;
+      if(state.id !== action.id) return state;
         return {
-          ...todo,
-          completed: !todo.completed
-        };
-      });
+          ...state,
+          completed: !state.completed
+      };
+    default:
+      return state;
+  }
+}
+
+// todos reducer for carrying out an action on entire todo list
+const todos = (state = [], action) => {
+  // 2 actions for adding and toggling todos
+  // state shouldn't be mutated directly
+  switch (action.type){
+    case 'ADD_TODO':
+      return [
+        ...state,
+        todo(undefined, action)
+      ];
+    case 'TOGGLE_TODO':
+      return state.map(t => todo(t, action));
     default:
       return state;
   }

@@ -74,7 +74,7 @@ const todoApp = combineReducers({
 
 const store = createStore(todoApp);
 
-const FilterLink = ({filter, children, currentFilter}) => {
+const FilterLink = ({filter, children, currentFilter, onClick}) => {
   // the visibility filter that is clicked is shown as a span instead of link, so that is can be rendered unclickable
   if(filter === currentFilter){
     return <span>{children}</span>;
@@ -84,16 +84,25 @@ const FilterLink = ({filter, children, currentFilter}) => {
     <a href='#'
       onClick = {e => {
         e.preventDefault();
-        store.dispatch({
-          type: 'SET_VISIBILITY_FILTER',
-          filter
-        });
+        onClick(filter);
       }}
     >
       {children}
     </a>
   );
 }
+
+// component for visibility filter buttons
+const Footer = ({visibilityFilter, onFilterClick}) => (
+  // buttons for setting visibility filter
+  <p>
+  {/* for adding space, use {' '} */}
+    Show: {' '}
+    <FilterLink filter='SHOW_ALL' currentFilter={visibilityFilter} onClick={onFilterClick}> All </FilterLink> {' '}
+    <FilterLink filter='SHOW_ACTIVE' currentFilter={visibilityFilter} onClick={onFilterClick}> Active </FilterLink> {' '}
+    <FilterLink filter='SHOW_COMPLETED' currentFilter={visibilityFilter} onClick={onFilterClick}> Completed </FilterLink>
+  </p>
+)
 
 // separate component for each Todo
 // making onClick handler a prop so that programmer can specify what to be done on clicking, instead of hardcoding TOGGLE_TODO
@@ -120,6 +129,26 @@ const TodoList = ({todos, onTodoClick}) => (
   </ul>
 );
 
+// separate component for add-todo button
+const Addtodo = ({onAddClick}) => {
+  let input;
+  return (
+    <div>
+      {/* for taking input from user */}
+      <input ref={node => {
+        input = node;
+      }} />
+      {/* always dispatches ADD_TODO action */}
+      <button onClick={() => {
+        onAddClick(input.value)
+        input.value = '';
+      }}>
+        Add Todo
+      </button>
+    </div>
+  );
+}
+
 // method for setting visibility filter
 const getVisibleTodos = (todos, filter) => {
   switch (filter) {
@@ -134,47 +163,29 @@ const getVisibleTodos = (todos, filter) => {
 
 let nextTodoID = 0;
 // The main TodoApp component which holds all other components
-class TodoApp extends React.Component {
-  render() {
-    const {todos, visibilityFilter} = this.props;
-    const visibleTodos = getVisibleTodos(todos, visibilityFilter);
-
-    return (
-      <div>
-        {/* for taking input from user */}
-        <input ref={node => {
-          this.input = node;
-        }} />
-        {/* always dispatches ADD_TODO action */}
-        <button onClick={() => {
-          store.dispatch({
-            type: 'ADD_TODO',
-            text: this.input.value,
-            id: nextTodoID++
-          });
-          this.input.value = '';
-        }}>
-          Add Todo
-        </button>
-
-        {/* top level TodoList component which consists of each Todo component defined above */}
-        <TodoList 
-          todos={visibleTodos} 
-          onTodoClick={id => store.dispatch({type: 'TOGGLE_TODO', id})} 
-        />
-
-        {/* buttons for setting visibility filter */}
-        <p>
-        {/* for adding space, use {' '} */}
-          Show: {' '}
-          <FilterLink filter='SHOW_ALL' currentFilter={visibilityFilter}> All </FilterLink> {' '}
-          <FilterLink filter='SHOW_ACTIVE' currentFilter={visibilityFilter}> Active </FilterLink> {' '}
-          <FilterLink filter='SHOW_COMPLETED' currentFilter={visibilityFilter}> Completed </FilterLink>
-        </p>
-      </div>
-    );
-  }
-}
+const TodoApp = ({todos, visibilityFilter}) => (
+  <div>
+    <Addtodo 
+      onAddClick={text => store.dispatch({
+        type: 'ADD_TODO',
+        id: nextTodoID++,
+        text
+      })}
+    />
+    {/* top level TodoList component which consists of each Todo component defined above */}
+    <TodoList 
+      todos={getVisibleTodos(todos, visibilityFilter)}
+      onTodoClick={id => store.dispatch({type: 'TOGGLE_TODO', id})} 
+    />
+    <Footer 
+      visibilityFilter={visibilityFilter}
+      onFilterClick={filter => store.dispatch({
+        type: 'SET_VISIBILITY_FILTER',
+        filter
+      })}
+    />
+  </div>
+);
 
 const render = () => {
   ReactDOM.render(

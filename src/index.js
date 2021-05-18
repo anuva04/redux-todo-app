@@ -102,7 +102,7 @@ class FilterLink extends React.Component {
   componentWillUnmount(){
     this.unsubscribe();
   }
-  
+
   render() {
     const props = this.props;
     const state = store.getState();
@@ -127,8 +127,8 @@ const Footer = () => (
   <p>
   {/* for adding space, use {' '} */}
     Show: {' '}
-    <FilterLink filter='SHOW_ALL'> All </FilterLink> {' '}
-    <FilterLink filter='SHOW_ACTIVE'> Active </FilterLink> {' '}
+    <FilterLink filter='SHOW_ALL'> All </FilterLink> {' || '}
+    <FilterLink filter='SHOW_ACTIVE'> Active </FilterLink> {' || '}
     <FilterLink filter='SHOW_COMPLETED'> Completed </FilterLink>
   </p>
 )
@@ -159,7 +159,7 @@ const TodoList = ({todos, onTodoClick}) => (
 );
 
 // separate component for add-todo button
-const Addtodo = ({onAddClick}) => {
+const Addtodo = () => {
   let input;
   return (
     <div>
@@ -169,7 +169,11 @@ const Addtodo = ({onAddClick}) => {
       }} />
       {/* always dispatches ADD_TODO action */}
       <button onClick={() => {
-        onAddClick(input.value)
+        store.dispatch({
+          type: 'ADD_TODO',
+          id: nextTodoID++,
+          text: input.value
+        })
         input.value = '';
       }}>
         Add Todo
@@ -190,34 +194,47 @@ const getVisibleTodos = (todos, filter) => {
   }
 }
 
+class VisibleTodoList extends React.Component {
+  componentDidMount(){
+    this.unsubscribe = store.subscribe(() => this.forceUpdate());
+  }
+  componentWillUnmount(){
+    this.unsubscribe();
+  }
+
+  render(){
+    const props = this.props;
+    const state = store.getState();
+
+    return (
+      <TodoList
+        todos={getVisibleTodos(state.todos, state.visibilityFilter)}
+        onTodoClick={id => store.dispatch({
+          type: 'TOGGLE_TODO',
+          id
+        })}
+      />
+    );
+  }
+}
+
+// global variable for individual todo unique ID
 let nextTodoID = 0;
+
 // The main TodoApp component which holds all other components
-const TodoApp = ({todos, visibilityFilter}) => (
+const TodoApp = () => (
   <div>
-    <Addtodo 
-      onAddClick={text => store.dispatch({
-        type: 'ADD_TODO',
-        id: nextTodoID++,
-        text
-      })}
-    />
-    {/* top level TodoList component which consists of each Todo component defined above */}
-    <TodoList 
-      todos={getVisibleTodos(todos, visibilityFilter)}
-      onTodoClick={id => store.dispatch({type: 'TOGGLE_TODO', id})} 
-    />
+    <Addtodo />
+    <VisibleTodoList />
     <Footer />
   </div>
 );
 
-const render = () => {
-  ReactDOM.render(
-    <React.StrictMode>
-      <TodoApp {...store.getState()}/>
-    </React.StrictMode>,
-    document.getElementById('root')
-  );
-}
-
-store.subscribe(render);
-render();
+// calling React DOM
+// now each component subscribes to the store themselves
+ReactDOM.render(
+  <React.StrictMode>
+    <TodoApp />
+  </React.StrictMode>,
+  document.getElementById('root')
+);

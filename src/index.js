@@ -95,6 +95,31 @@ const FilterLink = ({filter, children, currentFilter}) => {
   );
 }
 
+// separate component for each Todo
+// making onClick handler a prop so that programmer can specify what to be done on clicking, instead of hardcoding TOGGLE_TODO
+const Todo = ({onClick, completed, text}) => (
+  <li onClick={onClick} 
+      // double curly braces because we are adding a JS logical expression
+      style={{ textDecoration: completed ? 'line-through' : 'none' }} >
+    {text}
+  </li>
+);
+
+// TodoList component for holding all Todo components
+const TodoList = ({todos, onTodoClick}) => (
+  <ul>
+    {todos.map(todo =>
+      <Todo 
+        // each <li> should have a unique key for react to be able to uniquely identify it
+        key={todo.id} 
+        // spread over other props of todo
+        {...todo}
+        onClick={() => onTodoClick(todo.id)}
+      />
+    )}
+  </ul>
+);
+
 // method for setting visibility filter
 const getVisibleTodos = (todos, filter) => {
   switch (filter) {
@@ -108,6 +133,7 @@ const getVisibleTodos = (todos, filter) => {
 }
 
 let nextTodoID = 0;
+// The main TodoApp component which holds all other components
 class TodoApp extends React.Component {
   render() {
     const {todos, visibilityFilter} = this.props;
@@ -130,19 +156,13 @@ class TodoApp extends React.Component {
         }}>
           Add Todo
         </button>
-        <ul>
-          {visibleTodos.map(todo =>
-          // each <li> should have a unique key for react to be able to uniquely identify it
-            <li key={todo.id}
-                onClick={() => {
-                  store.dispatch({type: 'TOGGLE_TODO', id: todo.id});
-                }} 
-                // double curly braces because we are adding a JS logical expression
-                style={{ textDecoration: todo.completed ? 'line-through' : 'none' }} >
-              {todo.text}
-            </li>  
-          )}
-        </ul>
+
+        {/* top level TodoList component which consists of each Todo component defined above */}
+        <TodoList 
+          todos={visibleTodos} 
+          onTodoClick={id => store.dispatch({type: 'TOGGLE_TODO', id})} 
+        />
+
         {/* buttons for setting visibility filter */}
         <p>
         {/* for adding space, use {' '} */}

@@ -8,6 +8,8 @@ import ReactDOM from 'react-dom';
 import {createStore} from 'redux';
 import './index.css';
 import {combineReducers} from 'redux';
+// from react version 15 and above PropTypes has been moved to a separate module
+import PropTypes from 'prop-types';
 // var redux = require('react-redux');
 
 
@@ -100,7 +102,7 @@ class FilterLink extends React.Component {
   // this component subscribes to the store explicitly and calls forceUpdate any time the state is changed
   // otherwise if the parent is not updated, the component will return stale value
   componentDidMount(){
-    const {store} = this.props;
+    const {store} = this.context;
     this.unsubscribe = store.subscribe(() => this.forceUpdate());
   }
   componentWillUnmount(){
@@ -109,7 +111,7 @@ class FilterLink extends React.Component {
 
   render() {
     const props = this.props;
-    const {store} = props;
+    const {store} = this.context;
     const state = store.getState();
 
     return (
@@ -125,16 +127,19 @@ class FilterLink extends React.Component {
     );
   }
 }
+FilterLink.contextTypes = {
+  store: PropTypes.object
+};
 
 // component for visibility filter buttons
-const Footer = ({store}) => (
+const Footer = () => (
   // buttons for setting visibility filter
   <p>
   {/* for adding space, use {' '} */}
     Show: {' '}
-    <FilterLink filter='SHOW_ALL' store={store}> All </FilterLink> {' || '}
-    <FilterLink filter='SHOW_ACTIVE' store={store}> Active </FilterLink> {' || '}
-    <FilterLink filter='SHOW_COMPLETED' store={store}> Completed </FilterLink>
+    <FilterLink filter='SHOW_ALL'> All </FilterLink> {' || '}
+    <FilterLink filter='SHOW_ACTIVE'> Active </FilterLink> {' || '}
+    <FilterLink filter='SHOW_COMPLETED'> Completed </FilterLink>
   </p>
 )
 
@@ -164,7 +169,9 @@ const TodoList = ({todos, onTodoClick}) => (
 );
 
 // separate component for add-todo button
-const Addtodo = ({store}) => {
+// functional components receive context as a second argument after props
+// we are destructuring store from context
+const Addtodo = (props, {store}) => {
   let input;
   return (
     <div>
@@ -186,6 +193,9 @@ const Addtodo = ({store}) => {
     </div>
   );
 }
+Addtodo.contextTypes = {
+  store: PropTypes.object
+};
 
 // method for setting visibility filter
 const getVisibleTodos = (todos, filter) => {
@@ -201,7 +211,7 @@ const getVisibleTodos = (todos, filter) => {
 
 class VisibleTodoList extends React.Component {
   componentDidMount(){
-    const {store} = this.props
+    const {store} = this.context;
     this.unsubscribe = store.subscribe(() => this.forceUpdate());
   }
   componentWillUnmount(){
@@ -209,7 +219,7 @@ class VisibleTodoList extends React.Component {
   }
 
   render(){
-    const props = this.props;
+    const props = this.context;
     const {store} = props;
     const state = store.getState();
 
@@ -224,27 +234,52 @@ class VisibleTodoList extends React.Component {
     );
   }
 }
+VisibleTodoList.contextTypes = {
+  store: PropTypes.object
+};
 
 // global variable for individual todo unique ID
 let nextTodoID = 0;
 
 // The main TodoApp component which holds all other components
-const TodoApp = ({store}) => (
+const TodoApp = () => (
   <div>
     {/* Every component needs the store
     Not a good approach */}
-    <Addtodo store={store} />
-    <VisibleTodoList store={store} />
-    <Footer store={store} />
+    <Addtodo/>
+    <VisibleTodoList/>
+    <Footer/>
   </div>
 );
+
+// Advanced react concept called Context
+// Provider just renders its child components
+// So we can wrap any component in Provider to render it
+// Any component inside Provider will receive the Context object with the Store inside it
+class Provider extends React.Component {
+  getChildContext() {
+    return {
+      store: this.props.store
+    };
+  }
+  render(){
+    return this.props.children;
+  }
+}
+// to turn on Context for Provider
+Provider.childContextTypes = {
+  store: PropTypes.object
+};
 
 // calling React DOM
 // now each component subscribes to the store themselves
 ReactDOM.render(
   <React.StrictMode>
-    {/* injecting store directly into the component */}
-    <TodoApp store = {createStore(todoApp)}/>
+    {/* Provider component will make store available to any children and grandchildren */}
+    <Provider store = {createStore(todoApp)}>
+      {/* injecting store directly into the component */}
+      <TodoApp/>
+    </Provider>
   </React.StrictMode>,
   document.getElementById('root')
 );

@@ -1,7 +1,12 @@
+// for real-world apps, you might want to supply different stores for different requests
+// the previous structure we had doesn't scale well for this use case
+// if every component has to rely on a top-level component for store, it will create problems is that top-level component is removed
+
+
 import React from 'react';
 import ReactDOM from 'react-dom';
-import './index.css';
 import {createStore} from 'redux';
+import './index.css';
 import {combineReducers} from 'redux';
 // var redux = require('react-redux');
 
@@ -72,8 +77,6 @@ const todoApp = combineReducers({
   visibilityFilter
 });
 
-const store = createStore(todoApp);
-
 // component for a single visibility filter
 const Link = ({active, children, onClick}) => {
   // the visibility filter that is clicked is shown as a span instead of link, so that is can be rendered unclickable
@@ -97,6 +100,7 @@ class FilterLink extends React.Component {
   // this component subscribes to the store explicitly and calls forceUpdate any time the state is changed
   // otherwise if the parent is not updated, the component will return stale value
   componentDidMount(){
+    const {store} = this.props;
     this.unsubscribe = store.subscribe(() => this.forceUpdate());
   }
   componentWillUnmount(){
@@ -105,6 +109,7 @@ class FilterLink extends React.Component {
 
   render() {
     const props = this.props;
+    const {store} = props;
     const state = store.getState();
 
     return (
@@ -122,14 +127,14 @@ class FilterLink extends React.Component {
 }
 
 // component for visibility filter buttons
-const Footer = () => (
+const Footer = ({store}) => (
   // buttons for setting visibility filter
   <p>
   {/* for adding space, use {' '} */}
     Show: {' '}
-    <FilterLink filter='SHOW_ALL'> All </FilterLink> {' || '}
-    <FilterLink filter='SHOW_ACTIVE'> Active </FilterLink> {' || '}
-    <FilterLink filter='SHOW_COMPLETED'> Completed </FilterLink>
+    <FilterLink filter='SHOW_ALL' store={store}> All </FilterLink> {' || '}
+    <FilterLink filter='SHOW_ACTIVE' store={store}> Active </FilterLink> {' || '}
+    <FilterLink filter='SHOW_COMPLETED' store={store}> Completed </FilterLink>
   </p>
 )
 
@@ -159,7 +164,7 @@ const TodoList = ({todos, onTodoClick}) => (
 );
 
 // separate component for add-todo button
-const Addtodo = () => {
+const Addtodo = ({store}) => {
   let input;
   return (
     <div>
@@ -196,6 +201,7 @@ const getVisibleTodos = (todos, filter) => {
 
 class VisibleTodoList extends React.Component {
   componentDidMount(){
+    const {store} = this.props
     this.unsubscribe = store.subscribe(() => this.forceUpdate());
   }
   componentWillUnmount(){
@@ -204,6 +210,7 @@ class VisibleTodoList extends React.Component {
 
   render(){
     const props = this.props;
+    const {store} = props;
     const state = store.getState();
 
     return (
@@ -222,11 +229,13 @@ class VisibleTodoList extends React.Component {
 let nextTodoID = 0;
 
 // The main TodoApp component which holds all other components
-const TodoApp = () => (
+const TodoApp = ({store}) => (
   <div>
-    <Addtodo />
-    <VisibleTodoList />
-    <Footer />
+    {/* Every component needs the store
+    Not a good approach */}
+    <Addtodo store={store} />
+    <VisibleTodoList store={store} />
+    <Footer store={store} />
   </div>
 );
 
@@ -234,7 +243,8 @@ const TodoApp = () => (
 // now each component subscribes to the store themselves
 ReactDOM.render(
   <React.StrictMode>
-    <TodoApp />
+    {/* injecting store directly into the component */}
+    <TodoApp store = {createStore(todoApp)}/>
   </React.StrictMode>,
   document.getElementById('root')
 );

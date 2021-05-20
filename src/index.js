@@ -168,6 +168,18 @@ const TodoList = ({todos, onTodoClick}) => (
   </ul>
 );
 
+// global variable for individual todo unique ID
+let nextTodoID = 0;
+
+// function for extracting action creator so that multiple components can use ADD_TODO action and get hold of nextTodoID
+const addTodo = (text) => {
+  return {
+    type: 'ADD_TODO',
+    id: nextTodoID++,
+    text
+  };
+};
+
 // separate component for add-todo button
 // functional components receive context as a second argument after props
 // we are destructuring store from context
@@ -181,11 +193,7 @@ const Addtodo = (props, {store}) => {
       }} />
       {/* always dispatches ADD_TODO action */}
       <button onClick={() => {
-        store.dispatch({
-          type: 'ADD_TODO',
-          id: nextTodoID++,
-          text: input.value
-        })
+        store.dispatch(addTodo(input.value));
         input.value = '';
       }}>
         Add Todo
@@ -209,6 +217,7 @@ const getVisibleTodos = (todos, filter) => {
   }
 }
 
+// uses getVisibleTodos to generate which todos to render visible
 class VisibleTodoList extends React.Component {
   componentDidMount(){
     const {store} = this.context;
@@ -237,9 +246,6 @@ class VisibleTodoList extends React.Component {
 VisibleTodoList.contextTypes = {
   store: PropTypes.object
 };
-
-// global variable for individual todo unique ID
-let nextTodoID = 0;
 
 // The main TodoApp component which holds all other components
 const TodoApp = () => (
